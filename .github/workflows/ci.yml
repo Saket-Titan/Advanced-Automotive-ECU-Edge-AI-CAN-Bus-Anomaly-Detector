@@ -1,0 +1,57 @@
+name: mono-repo CI
+
+on:
+  push:
+    branches: ["feature/**", "main"]
+  pull_request:
+
+env:
+  ZEPHYR_SDK_VERSION: "0.16.4"
+
+jobs:
+  build-and-static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install host packages
+        run: |
+          sudo apt update
+          sudo apt install -y ninja-build gperf ccache dfu-util \
+               device-tree-compiler python3-pip clang-format cppcheck
+
+      - name: Cache west & SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.west
+            ~/zephyr-sdk
+          key: ${{ runner.os }}-${{ env.ZEPHYR_SDK_VERSION }}
+
+      - name: Install Zephyr prerequisites
+        run: |
+          pip install west
+          west init -l .
+          west update
+          west zephyr-export
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Build ECU firmware
+        run: |
+          west build -p auto -b nucleo_f767zi ecu_project/firmware
+
+      - name: Build IDS firmware
+        run: |
+          west build -p auto -b nucleo_f767zi ids_project/firmware
+
+      - name: Run Cppcheck
+        run: |
+          cppcheck --enable=all --inconclusive --std=c17 --force \
+          --suppress=missingIncludeSystem --xml \
+          ecu_project/firmware ids_project/firmware 2> cppcheck.xml
