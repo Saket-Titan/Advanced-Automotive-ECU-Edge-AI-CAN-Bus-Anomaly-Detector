@@ -36,8 +36,9 @@ jobs:
 
       - name: Install Zephyr prerequisites
         run: |
+          # Install Zephyr prerequisites
           pip install west
-          west init -l .
+          west init -m https://github.com/zephyrproject-rtos/zephyr --mr v3.6.0   # or "main"
           west update
           west zephyr-export
           pip install -r zephyr/scripts/requirements.txt
