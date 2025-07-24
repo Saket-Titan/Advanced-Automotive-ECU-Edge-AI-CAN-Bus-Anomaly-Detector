@@ -43,6 +43,13 @@ jobs:
           west zephyr-export
           pip install -r zephyr/scripts/requirements.txt
 
+
+      - name: Debug – list workspace
+        run: |
+          echo "PWD = $PWD"
+          ls -R .
+
+
       - name: Build ECU firmware
         run: |
           west build -p auto -b nucleo_f767zi ecu_project/firmware
